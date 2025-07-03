@@ -1,6 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { addTab, removeTab, reorderTabs } from '../../slices/tabsSlice'
 import { useState, useRef, useEffect } from 'react'
+// eslint-disable-next-line no-unused-vars
 import { useSpring, animated } from '@react-spring/web'
 import Copy from '../../assets/copy.svg'
 import Delete from '../../assets/delete.svg'
@@ -155,9 +156,9 @@ export default function Home() {
 
     return (
         <>
-            <div className="flex p-5 overflow-x-auto border-b border-gray-300 bg-white w-4xl">
+            <div className="flex p-5 overflow-x-auto border-b border-gray-300 bg-white w-full">
                 <div
-                    className="flex items-center tab-bar-view"
+                    className="flex items-center tab-bar-view overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent sm:overflow-x-auto sm:scrollbar-thin sm:scrollbar-thumb-gray-300 sm:scrollbar-track-transparent w-full"
                     onMouseLeave={() =>
                         dotMenuOpen ? null : setActiveTabHovered(false)
                     }
