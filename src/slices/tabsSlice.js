@@ -1,10 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit';
+import infoIcon from '../assets/infoNormal.svg';
+import infoActiveIcon from '../assets/infoActive.svg';
+import detailsNormal from '../assets/detailsNormal.svg';
+import detailsActive from '../assets/detailsActive.svg';
+import endingNormal from '../assets/endingNormal.svg';
+import endingActive from '../assets/endingActive.svg';
 
 const initialState = [
-  { id: 1, name: 'Info' },
-  { id: 2, name: 'Details' },
-  { id: 3, name: 'Other' },
-  { id: 4, name: 'Ending' },
+  { id: 1, name: 'Info', icon_normal: infoIcon, icon_active: infoActiveIcon,
+  },
+  { id: 2, name: 'Details', icon_normal: detailsNormal, icon_active: detailsActive },
+  { id: 3, name: 'Other', icon_normal: detailsNormal, icon_active: detailsActive },
+  { id: 4, name: 'Ending', icon_normal: endingNormal, icon_active: endingActive },
 ];
 
 const tabsSlice = createSlice({

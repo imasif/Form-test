@@ -2,6 +2,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 
+@font-face {
+  font-family: 'BL Melody';
+  src: url('./assets/fonts/BLMelody-Regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root, body {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -53,7 +61,22 @@ body {
 .devider-plus {
   color: rgba(103, 114, 137, 1);
   border-radius: 50%;
-  border: 0.5px solid rgba(225, 225, 225, 1);
-  font-size: 8px;
+  border: 1px solid rgba(225, 225, 225, 1);
+  font-size: 10px;
   padding: 0 2px;
+  box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.09);
+  font-weight: 500;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+}
+
+.context-menu{
+  font-family: 'BL Melody', sans-serif;
+}
+
+.context-menu-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: rgba(26, 26, 26, 1);
 }
