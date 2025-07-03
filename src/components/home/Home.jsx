@@ -158,7 +158,7 @@ export default function Home() {
         <>
             <div className="flex p-5 overflow-x-auto border-b border-gray-300 bg-white w-4xl">
                 <div
-                    className="flex items-center tab-bar-view overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent sm:overflow-x-auto sm:scrollbar-thin sm:scrollbar-thumb-gray-300 sm:scrollbar-track-transparent w-full"
+                    className="flex items-center tab-bar-view scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent sm:overflow-x-auto sm:scrollbar-thin sm:scrollbar-thumb-gray-300 sm:scrollbar-track-transparent"
                     onMouseLeave={() =>
                         dotMenuOpen ? null : setActiveTabHovered(false)
                     }
