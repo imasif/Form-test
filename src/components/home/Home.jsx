@@ -2,6 +2,11 @@ import { useSelector, useDispatch } from 'react-redux'
 import { addTab, removeTab, reorderTabs } from '../../slices/tabsSlice'
 import { useState, useRef, useEffect } from 'react'
 import { useSpring, animated } from '@react-spring/web'
+import Copy from '../../assets/copy.svg'
+import Delete from '../../assets/delete.svg'
+import Flag from '../../assets/flag.svg'
+import Duplicate from '../../assets/duplicate.svg'
+import Rename from '../../assets/endingNormal.svg'
 
 function DividerAnimated({ hovered, onClick }) {
     const fadeIn = useSpring({
@@ -177,22 +182,38 @@ export default function Home() {
                                             : setActiveTabHovered(false)
                                         : setActiveTabHovered(true)
                                 }
-                                onContextMenu={(e) =>
-                                    handleRemoveTab(e, tab.id)
-                                }
-                                className={`flex items-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md
-                        ${
-                            tab.id === activeTab
-                                ? 'active-tab border border-solid border-gray-400 '
-                                : 'inactive-tab'
-                        }
-                        }`}
+                                className={`flex items-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md gap-1 ${
+                                    tab.id === activeTab
+                                        ? 'active-tab border border-solid border-gray-400 '
+                                        : 'inactive-tab'
+                                }`}
                                 style={{
                                     opacity:
                                         dragTabId.current === tab.id ? 0.5 : 1,
+                                    minWidth: 0,
                                 }}
                             >
-                                {tab.name}
+                                {/* Icon rendering for tab */}
+                                {tab.icon_normal && tab.icon_active ? (
+                                    <span className="flex items-center justify-center w-5 h-5 shrink-0">
+                                        {tab.id === activeTab ? (
+                                            <img
+                                                src={tab.icon_active}
+                                                alt="active icon"
+                                                className="w-4 h-4"
+                                            />
+                                        ) : (
+                                            <img
+                                                src={tab.icon_normal}
+                                                alt="tab icon"
+                                                className="w-4 h-4"
+                                            />
+                                        )}
+                                    </span>
+                                ) : null}
+                                <span className="truncate max-w-[100px]">
+                                    {tab.name}
+                                </span>
                                 {tab.id === activeTab && (
                                     <>
                                         <animated.span
@@ -235,7 +256,7 @@ export default function Home() {
                                         </animated.span>
                                         {dotMenuOpen && (
                                             <div
-                                                className="absolute z-50 min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl py-0 animate-fadein overflow-hidden font-[\'BL\ Melody\',_sans-serif]"
+                                                className="absolute z-50 min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl py-0 pb-1 animate-fadein overflow-hidden context-menu"
                                                 style={{
                                                     left: dotMenuPos.x,
                                                     top: dotMenuPos.y + 10,
@@ -243,114 +264,57 @@ export default function Home() {
                                                         'translateX(-50%)',
                                                 }}
                                             >
-                                                <div className="px-5 pt-4 pb-2 text-base text-gray-900 border-b border-gray-100">
+                                                <div className="px-5 pt-4 pb-2 text-base text-gray-900 border-b border-gray-100 context-menu-title">
                                                     Settings
                                                 </div>
-                                                <button className="flex items-center gap-3 w-full text-left px-5 py-2.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                    <span className="text-blue-500">
-                                                        <svg
-                                                            width="18"
-                                                            height="18"
-                                                            fill="none"
-                                                            viewBox="0 0 20 20"
-                                                        >
-                                                            <path
-                                                                d="M4 10l4 4 8-8"
-                                                                stroke="currentColor"
-                                                                strokeWidth="2"
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                            />
-                                                        </svg>
+                                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                                    <span>
+                                                        <img
+                                                            src={Flag}
+                                                            alt="Flag icon"
+                                                            className="w-4 h-4"
+                                                        />
                                                     </span>
                                                     Set as first page
                                                 </button>
-                                                <button className="flex items-center gap-3 w-full text-left px-5 py-2.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                    <span className="text-gray-500">
-                                                        <svg
-                                                            width="18"
-                                                            height="18"
-                                                            fill="none"
-                                                            viewBox="0 0 20 20"
-                                                        >
-                                                            <path
-                                                                d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                                                                stroke="currentColor"
-                                                                strokeWidth="1.5"
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                            />
-                                                        </svg>
+                                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                                    <span>
+                                                        <img
+                                                            src={Rename}
+                                                            alt="Rename icon"
+                                                            className="w-4 h-4"
+                                                        />
                                                     </span>
                                                     Rename
                                                 </button>
-                                                <button className="flex items-center gap-3 w-full text-left px-5 py-2.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                    <span className="text-gray-500">
-                                                        <svg
-                                                            width="18"
-                                                            height="18"
-                                                            fill="none"
-                                                            viewBox="0 0 20 20"
-                                                        >
-                                                            <rect
-                                                                x="4"
-                                                                y="4"
-                                                                width="12"
-                                                                height="12"
-                                                                rx="2"
-                                                                stroke="currentColor"
-                                                                strokeWidth="1.5"
-                                                            />
-                                                            <path
-                                                                d="M8 8h4v4H8z"
-                                                                fill="currentColor"
-                                                            />
-                                                        </svg>
+                                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                                    <span>
+                                                        <img
+                                                            src={Copy}
+                                                            alt="Copy icon"
+                                                            className="w-4 h-4"
+                                                        />
                                                     </span>
                                                     Copy
                                                 </button>
-                                                <button className="flex items-center gap-3 w-full text-left px-5 py-2.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                    <span className="text-gray-500">
-                                                        <svg
-                                                            width="18"
-                                                            height="18"
-                                                            fill="none"
-                                                            viewBox="0 0 20 20"
-                                                        >
-                                                            <rect
-                                                                x="4"
-                                                                y="4"
-                                                                width="12"
-                                                                height="12"
-                                                                rx="2"
-                                                                stroke="currentColor"
-                                                                strokeWidth="1.5"
-                                                            />
-                                                            <path
-                                                                d="M8 8h4v4H8z"
-                                                                fill="currentColor"
-                                                            />
-                                                        </svg>
+                                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                                    <span>
+                                                        <img
+                                                            src={Duplicate}
+                                                            alt="Duplicate icon"
+                                                            className="w-4 h-4"
+                                                        />
                                                     </span>
                                                     Duplicate
                                                 </button>
                                                 <div className="my-1 border-t border-gray-100"></div>
-                                                <button className="flex items-center gap-3 w-full text-left px-5 py-2.5 hover:bg-red-50 text-red-600 text-sm">
+                                                <button className="flex items-center gap-3 w-full text-left px-5 py-1.5 hover:bg-red-50 text-red-600 text-sm">
                                                     <span>
-                                                        <svg
-                                                            width="18"
-                                                            height="18"
-                                                            fill="none"
-                                                            viewBox="0 0 20 20"
-                                                        >
-                                                            <path
-                                                                d="M6 6l8 8M6 14L14 6"
-                                                                stroke="currentColor"
-                                                                strokeWidth="2"
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                            />
-                                                        </svg>
+                                                        <img
+                                                            src={Delete}
+                                                            alt="Delete icon"
+                                                            className="w-4 h-4"
+                                                        />
                                                     </span>
                                                     Delete
                                                 </button>

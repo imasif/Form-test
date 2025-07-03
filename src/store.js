@@ -39,6 +39,9 @@ const store = configureStore({
     preloadedState,
 })
 
+// Save state to localStorage immediately on first load
+saveState(store.getState())
+
 store.subscribe(() => {
     saveState(store.getState())
 })
