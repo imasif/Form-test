@@ -187,6 +187,10 @@ export default function Home() {
                                     tab.id === activeTab
                                         ? 'active-tab border border-solid border-gray-400 '
                                         : 'inactive-tab'
+                                } ${
+                                    dragTabId.current === tab.id
+                                        ? ''
+                                        : 'cursor-grab active:cursor-grabbing'
                                 }`}
                                 style={{
                                     opacity:
