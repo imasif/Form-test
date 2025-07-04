@@ -169,8 +169,6 @@ export default function Home() {
                                 }`}
                                 tabIndex={0}
                                 style={{
-                                    opacity:
-                                        dragTabId.current === tab.id ? 0.5 : 1,
                                     minWidth: 0,
                                 }}
                             >
