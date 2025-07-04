@@ -10,12 +10,13 @@ import Duplicate from '../../assets/duplicate.svg'
 import Rename from '../../assets/endingNormal.svg'
 
 function DividerAnimated({ hovered, onClick }) {
-    const fadeIn = useSpring({
-        opacity: hovered ? 1 : 0,
+    const widthChange = useSpring({
+        width: hovered ? '55px' : '16px',
         config: { tension: 200, friction: 24 },
     })
-    const fadeOut = useSpring({
-        opacity: hovered ? 0 : 1,
+    const iconAppearance = useSpring({
+        opacity: hovered ? 1 : 0,
+        marginTop: hovered ? '0' : '8px',
         config: { tension: 200, friction: 24 },
     })
     return (
@@ -23,23 +24,14 @@ function DividerAnimated({ hovered, onClick }) {
             className="relative cursor-pointer"
             onClick={hovered ? onClick : undefined}
         >
-            {hovered ? (
-                <animated.div
-                    style={fadeIn}
-                    className="flex items-center text-gray-800"
-                >
-                    <div className="w-5 h-full border-b border-dashed border-black"></div>
-                    <span className="mx-1 devider-plus select-none">＋</span>
-                    <div className="w-5 h-full border-b border-dashed border-black"></div>
+            <animated.div
+                style={widthChange}
+                className="flex items-center text-gray-800 h-1 border-b border-dashed border-black"
+            >
+                <animated.div style={iconAppearance}>
+                    <span className="mx-4.5 devider-plus select-none">＋</span>
                 </animated.div>
-            ) : (
-                <animated.div
-                    style={fadeOut}
-                    className="flex items-center text-gray-800"
-                >
-                    <div className="w-5 h-full border-b border-dashed border-black"></div>
-                </animated.div>
-            )}
+            </animated.div>
         </div>
     )
 }
@@ -83,8 +75,8 @@ export default function Home() {
     const dotRef = useRef(null)
 
     const dotSpring = useSpring({
-        display: activeTabHovered ? 'block' : 'none',
-        opacity: activeTabHovered ? 1 : 0,
+        display: activeTab ? 'block' : 'none',
+        opacity: activeTab ? 1 : 0,
         config: { tension: 200, friction: 24 },
     })
 
@@ -157,12 +149,7 @@ export default function Home() {
     return (
         <>
             <div className="flex p-5 overflow-x-auto border-b border-gray-300 bg-white w-4xl">
-                <div
-                    className="flex items-center tab-bar-view scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent sm:overflow-x-auto sm:scrollbar-thin sm:scrollbar-thumb-gray-300 sm:scrollbar-track-transparent"
-                    onMouseLeave={() =>
-                        dotMenuOpen ? null : setActiveTabHovered(false)
-                    }
-                >
+                <div className="flex items-center tab-bar-view scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent sm:overflow-x-auto overflow-y-hidden h-9 sm:scrollbar-thin sm:scrollbar-thumb-gray-300 sm:scrollbar-track-transparent">
                     {tabs.map((tab, idx) => (
                         <div key={tab.id} className="flex items-center group">
                             <div
@@ -171,19 +158,7 @@ export default function Home() {
                                 onDragOver={(e) => handleDragOver(e, tab.id)}
                                 onDrop={(e) => handleDrop(e, tab.id)}
                                 onClick={() => handleTabClick(tab.id, idx)}
-                                onMouseOver={() =>
-                                    tab.id === activeTab
-                                        ? setActiveTabHovered(true)
-                                        : setActiveTabHovered(false)
-                                }
-                                onMouseLeave={() =>
-                                    tab.id === activeTab
-                                        ? dotMenuOpen
-                                            ? setActiveTabHovered(true)
-                                            : setActiveTabHovered(false)
-                                        : setActiveTabHovered(true)
-                                }
-                                className={`flex items-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md gap-1 ${
+                                className={`flex items-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md gap-1 tab-bar-item overflow-hidden ${
                                     tab.id === activeTab
                                         ? 'active-tab border border-solid border-gray-400 '
                                         : 'inactive-tab'
@@ -192,6 +167,7 @@ export default function Home() {
                                         ? ''
                                         : 'cursor-grab active:cursor-grabbing'
                                 }`}
+                                tabIndex={0}
                                 style={{
                                     opacity:
                                         dragTabId.current === tab.id ? 0.5 : 1,
@@ -255,9 +231,9 @@ export default function Home() {
                                                 setDotMenuOpen(true)
                                             }}
                                         >
-                                            <div className="w-0.5 h-0.5 bg-gray-500 rounded-full m-0.5 block"></div>
-                                            <div className="w-0.5 h-0.5 bg-gray-500 rounded-full m-0.5 block"></div>
-                                            <div className="w-0.5 h-0.5 bg-gray-500 rounded-full m-0.5 block"></div>
+                                            <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
+                                            <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
+                                            <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
                                         </animated.span>
                                         {dotMenuOpen && (
                                             <div
@@ -379,7 +355,7 @@ export default function Home() {
                                         }
                                     />
                                 ) : (
-                                    <div className="w-5 h-full border-b border-dashed border-black"></div>
+                                    <div className="w-4 h-full border-b border-dashed border-black"></div>
                                 )}
                             </div>
                         </div>
@@ -387,7 +363,7 @@ export default function Home() {
                 </div>
                 <button
                     onClick={handleAddTab}
-                    className="flex items-center px-4 whitespace-nowrap text-sm border border-dotted border-gray-300 cursor-pointer select-none rounded-md text-gray-800"
+                    className="flex items-center px-4 whitespace-nowrap text-sm border border-dotted border-gray-300 cursor-pointer select-none rounded-md text-gray-800 h-7.5 mt-1"
                 >
                     ＋ Add page
                 </button>
