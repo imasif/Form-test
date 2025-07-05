@@ -97,7 +97,7 @@ function SortableTab({
         transition,
         isDragging,
     } = useSortable({ id: tab.id })
-    const tabWidth = 110
+    const tabWidth = 120
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -145,7 +145,7 @@ function SortableTab({
                         )}
                     </span>
                 ) : null}
-                <span className="truncate w-full">{tab.name}</span>
+                <span className="w-full">{tab.name}</span>
                 {/* Three dots and menu for active tab */}
                 {tab.id === activeTab && (
                     <>
