@@ -1,6 +1,6 @@
 import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { addTab, reorderTabs } from '../../slices/tabsSlice'
+import { addTab, reorderTabs, setActiveTab } from '../../slices/tabsSlice'
 import { useState, useRef, useEffect } from 'react'
 // eslint-disable-next-line no-unused-vars
 import { useSpring, animated } from '@react-spring/web'
@@ -251,9 +251,9 @@ function SortableTab({
 }
 
 export default function Home() {
-    const tabs = useSelector((state) => state.tabs)
+    const tabs = useSelector((state) => state.tabs.tabs || state.tabs)
+    const activeTab = useSelector((state) => state.tabs.activeTabId)
     const dispatch = useDispatch()
-    const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 1)
     const [dividerHover, setDividerHover] = useState(null)
     const dotRef = useRef(null)
 
@@ -289,7 +289,8 @@ export default function Home() {
         const newId = Date.now()
         dispatch(addTab({ id: newId, name: `Page ${tabs.length + 1}` }))
         setPages([...pages, ''])
-        setActiveTab(newId)
+        setSlideDir('right')
+        // activeTabId is set in slice
     }
 
     const handleTabClick = (id, idx) => {
@@ -297,7 +298,7 @@ export default function Home() {
         setSlideDir(
             tabs.findIndex((t) => t.id === activeTab) < idx ? 'right' : 'left'
         )
-        setActiveTab(id)
+        dispatch(setActiveTab(id))
     }
 
     // DnD-kit sensors
@@ -446,8 +447,10 @@ export default function Home() {
                                                                           ),
                                                                       ]
                                                                   )
-                                                                  setActiveTab(
-                                                                      newId
+                                                                  dispatch(
+                                                                      setActiveTab(
+                                                                          newId
+                                                                      )
                                                                   )
                                                                   setSlideDir(
                                                                       'right'
