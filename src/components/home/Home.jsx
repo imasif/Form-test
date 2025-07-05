@@ -72,7 +72,23 @@ function PageSlider({ children, direction }) {
     )
 }
 
-function SortableTab({ tab, idx, activeTab, onTabClick }) {
+function SortableTab({
+    tab,
+    idx,
+    activeTab,
+    onTabClick,
+    dotRef,
+    dotSpring,
+    dotMenuOpen,
+    setDotMenuOpen,
+    setDotMenuPos,
+    dotMenuPos,
+    Flag,
+    Rename,
+    Copy,
+    Duplicate,
+    Delete,
+}) {
     const {
         attributes,
         listeners,
@@ -81,8 +97,7 @@ function SortableTab({ tab, idx, activeTab, onTabClick }) {
         transition,
         isDragging,
     } = useSortable({ id: tab.id })
-    // Fix: prevent tab from shrinking/growing by setting a fixed width
-    const tabWidth = 110 // px, adjust as needed for your design
+    const tabWidth = 110
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -90,8 +105,9 @@ function SortableTab({ tab, idx, activeTab, onTabClick }) {
         opacity: isDragging ? 0.7 : 1,
         boxShadow: isDragging ? '0 4px 16px rgba(0,0,0,0.18)' : undefined,
         cursor: isDragging ? 'grabbing' : 'grab',
-        minWidth: tabWidth,
         maxWidth: tabWidth,
+        minWidth: tabWidth,
+        width: tabWidth,
     }
     return (
         <div
@@ -102,7 +118,7 @@ function SortableTab({ tab, idx, activeTab, onTabClick }) {
             className="flex items-center group"
         >
             <div
-                className={`flex items-center text-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md gap-1 tab-bar-item overflow-hidden ${
+                className={`flex items-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md gap-1 tab-bar-item overflow-hidden ${
                     tab.id === activeTab
                         ? 'active-tab border border-solid border-gray-400 '
                         : 'inactive-tab'
@@ -130,6 +146,106 @@ function SortableTab({ tab, idx, activeTab, onTabClick }) {
                     </span>
                 ) : null}
                 <span className="truncate w-full">{tab.name}</span>
+                {/* Three dots and menu for active tab */}
+                {tab.id === activeTab && (
+                    <>
+                        <animated.span
+                            ref={dotRef}
+                            style={dotSpring}
+                            className="ml-2 flex items-center space-x-1 relative cursor-pointer"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                const rect =
+                                    e.currentTarget.getBoundingClientRect()
+                                const menuHeight = 220
+                                let placement = 'bottom'
+                                let y = rect.bottom + window.scrollY
+                                if (
+                                    window.innerHeight - rect.bottom <
+                                    menuHeight
+                                ) {
+                                    placement = 'top'
+                                    y = rect.top + window.scrollY - menuHeight
+                                }
+                                setDotMenuPos({
+                                    x: rect.left + rect.width / 2,
+                                    y,
+                                    placement,
+                                })
+                                setDotMenuOpen(true)
+                            }}
+                        >
+                            <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
+                            <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
+                            <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
+                        </animated.span>
+                        {dotMenuOpen && (
+                            <div
+                                className="absolute z-50 min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl py-0 pb-1 animate-fadein overflow-hidden context-menu"
+                                style={{
+                                    left: dotMenuPos.x,
+                                    top: dotMenuPos.y + 10,
+                                    transform: 'translateX(-50%)',
+                                }}
+                            >
+                                <div className="px-5 pt-4 pb-2 text-base text-gray-900 border-b border-gray-100 context-menu-title">
+                                    Settings
+                                </div>
+                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                    <span>
+                                        <img
+                                            src={Flag}
+                                            alt="Flag icon"
+                                            className="w-4 h-4"
+                                        />
+                                    </span>
+                                    Set as first page
+                                </button>
+                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                    <span>
+                                        <img
+                                            src={Rename}
+                                            alt="Rename icon"
+                                            className="w-4 h-4"
+                                        />
+                                    </span>
+                                    Rename
+                                </button>
+                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                    <span>
+                                        <img
+                                            src={Copy}
+                                            alt="Copy icon"
+                                            className="w-4 h-4"
+                                        />
+                                    </span>
+                                    Copy
+                                </button>
+                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                    <span>
+                                        <img
+                                            src={Duplicate}
+                                            alt="Duplicate icon"
+                                            className="w-4 h-4"
+                                        />
+                                    </span>
+                                    Duplicate
+                                </button>
+                                <div className="my-1 border-t border-gray-100"></div>
+                                <button className="flex items-center gap-3 w-full text-left px-5 py-1.5 hover:bg-red-50 text-red-600 text-sm">
+                                    <span>
+                                        <img
+                                            src={Delete}
+                                            alt="Delete icon"
+                                            className="w-4 h-4"
+                                        />
+                                    </span>
+                                    Delete
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     )
@@ -253,133 +369,18 @@ export default function Home() {
                                             idx={idx}
                                             activeTab={activeTab}
                                             onTabClick={handleTabClick}
-                                        >
-                                            {tab.id === activeTab && (
-                                                <>
-                                                    <animated.span
-                                                        ref={dotRef}
-                                                        style={dotSpring}
-                                                        className="ml-2 flex items-center space-x-1 relative"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            // Get bounding rect for placement
-                                                            const rect =
-                                                                e.currentTarget.getBoundingClientRect()
-                                                            const menuHeight = 120 // px, adjust as needed
-                                                            let placement =
-                                                                'bottom'
-                                                            let y =
-                                                                rect.bottom +
-                                                                window.scrollY
-                                                            if (
-                                                                window.innerHeight -
-                                                                    rect.bottom <
-                                                                menuHeight
-                                                            ) {
-                                                                placement =
-                                                                    'top'
-                                                                y =
-                                                                    rect.top +
-                                                                    window.scrollY -
-                                                                    menuHeight
-                                                            }
-                                                            setDotMenuPos({
-                                                                x:
-                                                                    rect.left +
-                                                                    rect.width /
-                                                                        2,
-                                                                y,
-                                                                placement,
-                                                            })
-                                                            setDotMenuOpen(true)
-                                                        }}
-                                                    >
-                                                        <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
-                                                        <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
-                                                        <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
-                                                    </animated.span>
-                                                    {dotMenuOpen && (
-                                                        <div
-                                                            className="absolute z-50 min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl py-0 pb-1 animate-fadein overflow-hidden context-menu"
-                                                            style={{
-                                                                left: dotMenuPos.x,
-                                                                top:
-                                                                    dotMenuPos.y +
-                                                                    10,
-                                                                transform:
-                                                                    'translateX(-50%)',
-                                                            }}
-                                                        >
-                                                            <div className="px-5 pt-4 pb-2 text-base text-gray-900 border-b border-gray-100 context-menu-title">
-                                                                Settings
-                                                            </div>
-                                                            <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                                <span>
-                                                                    <img
-                                                                        src={
-                                                                            Flag
-                                                                        }
-                                                                        alt="Flag icon"
-                                                                        className="w-4 h-4"
-                                                                    />
-                                                                </span>
-                                                                Set as first
-                                                                page
-                                                            </button>
-                                                            <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                                <span>
-                                                                    <img
-                                                                        src={
-                                                                            Rename
-                                                                        }
-                                                                        alt="Rename icon"
-                                                                        className="w-4 h-4"
-                                                                    />
-                                                                </span>
-                                                                Rename
-                                                            </button>
-                                                            <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                                <span>
-                                                                    <img
-                                                                        src={
-                                                                            Copy
-                                                                        }
-                                                                        alt="Copy icon"
-                                                                        className="w-4 h-4"
-                                                                    />
-                                                                </span>
-                                                                Copy
-                                                            </button>
-                                                            <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                                <span>
-                                                                    <img
-                                                                        src={
-                                                                            Duplicate
-                                                                        }
-                                                                        alt="Duplicate icon"
-                                                                        className="w-4 h-4"
-                                                                    />
-                                                                </span>
-                                                                Duplicate
-                                                            </button>
-                                                            <div className="my-1 border-t border-gray-100"></div>
-                                                            <button className="flex items-center gap-3 w-full text-left px-5 py-1.5 hover:bg-red-50 text-red-600 text-sm">
-                                                                <span>
-                                                                    <img
-                                                                        src={
-                                                                            Delete
-                                                                        }
-                                                                        alt="Delete icon"
-                                                                        className="w-4 h-4"
-                                                                    />
-                                                                </span>
-                                                                Delete
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )}
-                                        </SortableTab>
+                                            dotRef={dotRef}
+                                            dotSpring={dotSpring}
+                                            dotMenuOpen={dotMenuOpen}
+                                            setDotMenuOpen={setDotMenuOpen}
+                                            setDotMenuPos={setDotMenuPos}
+                                            dotMenuPos={dotMenuPos}
+                                            Flag={Flag}
+                                            Rename={Rename}
+                                            Copy={Copy}
+                                            Duplicate={Duplicate}
+                                            Delete={Delete}
+                                        ></SortableTab>
                                         {/* Hide divider when dragging */}
                                         {idx !== tabs.length - 1 ? (
                                             <div
