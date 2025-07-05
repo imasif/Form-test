@@ -97,17 +97,16 @@ function SortableTab({
         transition,
         isDragging,
     } = useSortable({ id: tab.id })
-    const tabWidth = 120
     const style = {
-        transform: CSS.Transform.toString(transform),
+        // Fix: force transform to only translateX, no scale/skew
+        transform: transform
+            ? `translate3d(${transform.x}px, 0, 0)`
+            : undefined,
         transition,
         zIndex: isDragging ? 99 : 1,
         opacity: isDragging ? 0.7 : 1,
         boxShadow: isDragging ? '0 4px 16px rgba(0,0,0,0.18)' : undefined,
         cursor: isDragging ? 'grabbing' : 'grab',
-        maxWidth: tabWidth,
-        minWidth: tabWidth,
-        width: tabWidth,
     }
     return (
         <div
@@ -145,7 +144,7 @@ function SortableTab({
                         )}
                     </span>
                 ) : null}
-                <span className="w-full">{tab.name}</span>
+                <span className={`w-full`}>{tab.name}</span>
                 {/* Three dots and menu for active tab */}
                 {tab.id === activeTab && (
                     <>
