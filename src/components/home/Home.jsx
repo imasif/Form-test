@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux'
-import { addTab, removeTab, reorderTabs } from '../../slices/tabsSlice'
+import { addTab, reorderTabs } from '../../slices/tabsSlice'
 import { useState, useRef, useEffect } from 'react'
 // eslint-disable-next-line no-unused-vars
 import { useSpring, animated } from '@react-spring/web'
@@ -8,6 +8,21 @@ import Delete from '../../assets/delete.svg'
 import Flag from '../../assets/flag.svg'
 import Duplicate from '../../assets/duplicate.svg'
 import Rename from '../../assets/endingNormal.svg'
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    useSortable,
+    horizontalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers'
 
 function DividerAnimated({ hovered, onClick }) {
     const widthChange = useSpring({
@@ -56,23 +71,81 @@ function PageSlider({ children, direction }) {
     )
 }
 
+function SortableTab({ tab, idx, activeTab, onTabClick }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: tab.id })
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 99 : 1,
+        opacity: isDragging ? 0.7 : 1,
+        boxShadow: isDragging ? '0 4px 16px rgba(0,0,0,0.18)' : undefined,
+        cursor: isDragging ? 'grabbing' : 'grab',
+    }
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className="flex items-center group"
+        >
+            <div
+                className={`flex items-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md gap-1 tab-bar-item overflow-hidden ${
+                    tab.id === activeTab
+                        ? 'active-tab border border-solid border-gray-400 '
+                        : 'inactive-tab'
+                }`}
+                tabIndex={0}
+                style={{ minWidth: 0 }}
+                onClick={() => onTabClick(tab.id, idx)}
+            >
+                {/* Icon rendering for tab */}
+                {tab.icon_normal && tab.icon_active ? (
+                    <span className="flex items-center justify-center w-5 h-5 shrink-0">
+                        {tab.id === activeTab ? (
+                            <img
+                                src={tab.icon_active}
+                                alt="active icon"
+                                className="w-4 h-4"
+                            />
+                        ) : (
+                            <img
+                                src={tab.icon_normal}
+                                alt="tab icon"
+                                className="w-4 h-4"
+                            />
+                        )}
+                    </span>
+                ) : null}
+                <span className="truncate max-w-[100px]">{tab.name}</span>
+            </div>
+        </div>
+    )
+}
+
 export default function Home() {
     const tabs = useSelector((state) => state.tabs)
     const dispatch = useDispatch()
     const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 1)
-    const [activeTabHovered, setActiveTabHovered] = useState(false)
     const [dividerHover, setDividerHover] = useState(null)
-    const dragTabId = useRef(null)
-    const [pages, setPages] = useState(tabs.map(() => ''))
-    const [lastTab, setLastTab] = useState(activeTab)
-    const [slideDir, setSlideDir] = useState('right')
+    const dotRef = useRef(null)
+
     const [dotMenuOpen, setDotMenuOpen] = useState(false)
     const [dotMenuPos, setDotMenuPos] = useState({
         x: 0,
         y: 0,
         placement: 'bottom',
     })
-    const dotRef = useRef(null)
+    const [pages, setPages] = useState(tabs.map(() => ''))
+    const [slideDir, setSlideDir] = useState('right')
+    const [isDragging, setIsDragging] = useState(false)
 
     const dotSpring = useSpring({
         display: activeTab ? 'block' : 'none',
@@ -96,10 +169,7 @@ export default function Home() {
         const newId = Date.now()
         dispatch(addTab({ id: newId, name: `Page ${tabs.length + 1}` }))
         setPages([...pages, ''])
-        setLastTab(activeTab)
-        setSlideDir('right')
         setActiveTab(newId)
-        setActiveTabHovered(false)
     }
 
     const handleTabClick = (id, idx) => {
@@ -107,258 +177,283 @@ export default function Home() {
         setSlideDir(
             tabs.findIndex((t) => t.id === activeTab) < idx ? 'right' : 'left'
         )
-        setLastTab(activeTab)
         setActiveTab(id)
-        setActiveTabHovered(true)
     }
 
-    const handleRemoveTab = (e, id) => {
-        e.stopPropagation()
-        dispatch(removeTab(id))
-        if (activeTab === id) {
-            const nextTab = tabs.find((t) => t.id !== id)
-            setActiveTab(nextTab?.id ?? null)
+    // DnD-kit sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 5,
+                axis: 'x', // Constrain dragging to horizontal axis only
+            },
+        })
+    )
+
+    const [tabOrder, setTabOrder] = useState(tabs.map((t) => t.id))
+    useEffect(() => {
+        setTabOrder(tabs.map((t) => t.id))
+    }, [tabs])
+
+    function handleDragStart() {
+        setIsDragging(true)
+    }
+    function handleDragEnd(event) {
+        setIsDragging(false)
+        const { active, over } = event
+        if (active && over && active.id !== over.id) {
+            const oldIndex = tabOrder.indexOf(active.id)
+            const newIndex = tabOrder.indexOf(over.id)
+            const newOrder = arrayMove(tabOrder, oldIndex, newIndex)
+            setTabOrder(newOrder)
+            // Reorder tabs in Redux
+            const newTabs = newOrder.map((id) => tabs.find((t) => t.id === id))
+            dispatch(reorderTabs(newTabs))
         }
-    }
-
-    // Drag and drop handlers
-    const handleDragStart = (e, id) => {
-        dragTabId.current = id
-        e.dataTransfer.effectAllowed = 'move'
-    }
-
-    const handleDragOver = (e, id) => {
-        e.preventDefault()
-        e.dataTransfer.dropEffect = 'move'
-    }
-
-    const handleDrop = (e, id) => {
-        e.preventDefault()
-        const fromId = dragTabId.current
-        if (fromId === id) return
-        const fromIndex = tabs.findIndex((tab) => tab.id === fromId)
-        const toIndex = tabs.findIndex((tab) => tab.id === id)
-        if (fromIndex === -1 || toIndex === -1) return
-        const newTabs = [...tabs]
-        const [moved] = newTabs.splice(fromIndex, 1)
-        newTabs.splice(toIndex, 0, moved)
-        dispatch(reorderTabs(newTabs))
-        dragTabId.current = null
     }
 
     return (
         <>
             <div className="flex p-5 overflow-x-auto border-b border-gray-300 bg-white w-4xl">
-                <div className="flex items-center tab-bar-view scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent sm:overflow-x-auto overflow-y-hidden h-9 sm:scrollbar-thin sm:scrollbar-thumb-gray-300 sm:scrollbar-track-transparent">
-                    {tabs.map((tab, idx) => (
-                        <div key={tab.id} className="flex items-center group">
-                            <div
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, tab.id)}
-                                onDragOver={(e) => handleDragOver(e, tab.id)}
-                                onDrop={(e) => handleDrop(e, tab.id)}
-                                onClick={() => handleTabClick(tab.id, idx)}
-                                className={`flex items-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md gap-1 tab-bar-item overflow-hidden ${
-                                    tab.id === activeTab
-                                        ? 'active-tab border border-solid border-gray-400 '
-                                        : 'inactive-tab'
-                                } ${
-                                    dragTabId.current === tab.id
-                                        ? ''
-                                        : 'cursor-grab active:cursor-grabbing'
-                                }`}
-                                tabIndex={0}
-                                style={{
-                                    minWidth: 0,
-                                }}
-                            >
-                                {/* Icon rendering for tab */}
-                                {tab.icon_normal && tab.icon_active ? (
-                                    <span className="flex items-center justify-center w-5 h-5 shrink-0">
-                                        {tab.id === activeTab ? (
-                                            <img
-                                                src={tab.icon_active}
-                                                alt="active icon"
-                                                className="w-4 h-4"
-                                            />
-                                        ) : (
-                                            <img
-                                                src={tab.icon_normal}
-                                                alt="tab icon"
-                                                className="w-4 h-4"
-                                            />
-                                        )}
-                                    </span>
-                                ) : null}
-                                <span className="truncate max-w-[100px]">
-                                    {tab.name}
-                                </span>
-                                {tab.id === activeTab && (
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    modifiers={[restrictToHorizontalAxis]}
+                >
+                    <SortableContext
+                        items={tabOrder}
+                        strategy={horizontalListSortingStrategy}
+                    >
+                        <div
+                            className={`flex items-center tab-bar-view scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent sm:overflow-x-auto overflow-y-hidden h-9 sm:scrollbar-thin sm:scrollbar-thumb-gray-300 sm:scrollbar-track-transparent${
+                                isDragging ? ' no-vertical-scroll' : ''
+                            }`}
+                            style={isDragging ? { overflowY: 'hidden' } : {}}
+                        >
+                            {tabOrder.map((id, idx) => {
+                                const tab = tabs.find((t) => t.id === id)
+                                return (
                                     <>
-                                        <animated.span
-                                            ref={dotRef}
-                                            style={dotSpring}
-                                            className="ml-2 flex items-center space-x-1 relative"
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                // Get bounding rect for placement
-                                                const rect =
-                                                    e.currentTarget.getBoundingClientRect()
-                                                const menuHeight = 120 // px, adjust as needed
-                                                let placement = 'bottom'
-                                                let y =
-                                                    rect.bottom + window.scrollY
-                                                if (
-                                                    window.innerHeight -
-                                                        rect.bottom <
-                                                    menuHeight
-                                                ) {
-                                                    placement = 'top'
-                                                    y =
-                                                        rect.top +
-                                                        window.scrollY -
-                                                        menuHeight
-                                                }
-                                                setDotMenuPos({
-                                                    x:
-                                                        rect.left +
-                                                        rect.width / 2,
-                                                    y,
-                                                    placement,
-                                                })
-                                                setDotMenuOpen(true)
-                                            }}
+                                        <SortableTab
+                                            key={tab.id}
+                                            tab={tab}
+                                            idx={idx}
+                                            activeTab={activeTab}
+                                            onTabClick={handleTabClick}
                                         >
-                                            <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
-                                            <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
-                                            <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
-                                        </animated.span>
-                                        {dotMenuOpen && (
+                                            {tab.id === activeTab && (
+                                                <>
+                                                    <animated.span
+                                                        ref={dotRef}
+                                                        style={dotSpring}
+                                                        className="ml-2 flex items-center space-x-1 relative"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            // Get bounding rect for placement
+                                                            const rect =
+                                                                e.currentTarget.getBoundingClientRect()
+                                                            const menuHeight = 120 // px, adjust as needed
+                                                            let placement =
+                                                                'bottom'
+                                                            let y =
+                                                                rect.bottom +
+                                                                window.scrollY
+                                                            if (
+                                                                window.innerHeight -
+                                                                    rect.bottom <
+                                                                menuHeight
+                                                            ) {
+                                                                placement =
+                                                                    'top'
+                                                                y =
+                                                                    rect.top +
+                                                                    window.scrollY -
+                                                                    menuHeight
+                                                            }
+                                                            setDotMenuPos({
+                                                                x:
+                                                                    rect.left +
+                                                                    rect.width /
+                                                                        2,
+                                                                y,
+                                                                placement,
+                                                            })
+                                                            setDotMenuOpen(true)
+                                                        }}
+                                                    >
+                                                        <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
+                                                        <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
+                                                        <div className="w-0.5 h-0.5 three-dot-color rounded-full m-0.5 block"></div>
+                                                    </animated.span>
+                                                    {dotMenuOpen && (
+                                                        <div
+                                                            className="absolute z-50 min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl py-0 pb-1 animate-fadein overflow-hidden context-menu"
+                                                            style={{
+                                                                left: dotMenuPos.x,
+                                                                top:
+                                                                    dotMenuPos.y +
+                                                                    10,
+                                                                transform:
+                                                                    'translateX(-50%)',
+                                                            }}
+                                                        >
+                                                            <div className="px-5 pt-4 pb-2 text-base text-gray-900 border-b border-gray-100 context-menu-title">
+                                                                Settings
+                                                            </div>
+                                                            <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                                                <span>
+                                                                    <img
+                                                                        src={
+                                                                            Flag
+                                                                        }
+                                                                        alt="Flag icon"
+                                                                        className="w-4 h-4"
+                                                                    />
+                                                                </span>
+                                                                Set as first
+                                                                page
+                                                            </button>
+                                                            <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                                                <span>
+                                                                    <img
+                                                                        src={
+                                                                            Rename
+                                                                        }
+                                                                        alt="Rename icon"
+                                                                        className="w-4 h-4"
+                                                                    />
+                                                                </span>
+                                                                Rename
+                                                            </button>
+                                                            <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                                                <span>
+                                                                    <img
+                                                                        src={
+                                                                            Copy
+                                                                        }
+                                                                        alt="Copy icon"
+                                                                        className="w-4 h-4"
+                                                                    />
+                                                                </span>
+                                                                Copy
+                                                            </button>
+                                                            <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
+                                                                <span>
+                                                                    <img
+                                                                        src={
+                                                                            Duplicate
+                                                                        }
+                                                                        alt="Duplicate icon"
+                                                                        className="w-4 h-4"
+                                                                    />
+                                                                </span>
+                                                                Duplicate
+                                                            </button>
+                                                            <div className="my-1 border-t border-gray-100"></div>
+                                                            <button className="flex items-center gap-3 w-full text-left px-5 py-1.5 hover:bg-red-50 text-red-600 text-sm">
+                                                                <span>
+                                                                    <img
+                                                                        src={
+                                                                            Delete
+                                                                        }
+                                                                        alt="Delete icon"
+                                                                        className="w-4 h-4"
+                                                                    />
+                                                                </span>
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </SortableTab>
+                                        {/* Hide divider when dragging */}
+                                        {idx !== tabs.length - 1 ? (
                                             <div
-                                                className="absolute z-50 min-w-[220px] bg-white border border-gray-200 rounded-2xl shadow-xl py-0 pb-1 animate-fadein overflow-hidden context-menu"
-                                                style={{
-                                                    left: dotMenuPos.x,
-                                                    top: dotMenuPos.y + 10,
-                                                    transform:
-                                                        'translateX(-50%)',
-                                                }}
+                                                className={`devider ${
+                                                    !isDragging
+                                                        ? ''
+                                                        : 'opacity-0'
+                                                }`}
+                                                onMouseEnter={() =>
+                                                    setDividerHover(tab.id)
+                                                }
+                                                onMouseLeave={() =>
+                                                    setDividerHover(null)
+                                                }
                                             >
-                                                <div className="px-5 pt-4 pb-2 text-base text-gray-900 border-b border-gray-100 context-menu-title">
-                                                    Settings
-                                                </div>
-                                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                    <span>
-                                                        <img
-                                                            src={Flag}
-                                                            alt="Flag icon"
-                                                            className="w-4 h-4"
-                                                        />
-                                                    </span>
-                                                    Set as first page
-                                                </button>
-                                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                    <span>
-                                                        <img
-                                                            src={Rename}
-                                                            alt="Rename icon"
-                                                            className="w-4 h-4"
-                                                        />
-                                                    </span>
-                                                    Rename
-                                                </button>
-                                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                    <span>
-                                                        <img
-                                                            src={Copy}
-                                                            alt="Copy icon"
-                                                            className="w-4 h-4"
-                                                        />
-                                                    </span>
-                                                    Copy
-                                                </button>
-                                                <button className="flex items-center gap-1 w-full text-left px-5 py-1.5 hover:bg-gray-50 text-gray-800 text-sm">
-                                                    <span>
-                                                        <img
-                                                            src={Duplicate}
-                                                            alt="Duplicate icon"
-                                                            className="w-4 h-4"
-                                                        />
-                                                    </span>
-                                                    Duplicate
-                                                </button>
-                                                <div className="my-1 border-t border-gray-100"></div>
-                                                <button className="flex items-center gap-3 w-full text-left px-5 py-1.5 hover:bg-red-50 text-red-600 text-sm">
-                                                    <span>
-                                                        <img
-                                                            src={Delete}
-                                                            alt="Delete icon"
-                                                            className="w-4 h-4"
-                                                        />
-                                                    </span>
-                                                    Delete
-                                                </button>
+                                                <DividerAnimated
+                                                    hovered={
+                                                        dividerHover === tab.id
+                                                    }
+                                                    onClick={
+                                                        dividerHover === tab.id
+                                                            ? () => {
+                                                                  const newId =
+                                                                      Date.now()
+                                                                  const insertIdx =
+                                                                      idx + 1
+                                                                  const newTab =
+                                                                      {
+                                                                          id: newId,
+                                                                          name: `Page ${
+                                                                              tabs.length +
+                                                                              1
+                                                                          }`,
+                                                                      }
+                                                                  // Insert new tab at insertIdx
+                                                                  const newTabs =
+                                                                      [
+                                                                          ...tabs.slice(
+                                                                              0,
+                                                                              insertIdx
+                                                                          ),
+                                                                          newTab,
+                                                                          ...tabs.slice(
+                                                                              insertIdx
+                                                                          ),
+                                                                      ]
+                                                                  dispatch(
+                                                                      reorderTabs(
+                                                                          newTabs
+                                                                      )
+                                                                  )
+                                                                  setPages(
+                                                                      (
+                                                                          prev
+                                                                      ) => [
+                                                                          ...prev.slice(
+                                                                              0,
+                                                                              insertIdx
+                                                                          ),
+                                                                          '',
+                                                                          ...prev.slice(
+                                                                              insertIdx
+                                                                          ),
+                                                                      ]
+                                                                  )
+                                                                  setActiveTab(
+                                                                      newId
+                                                                  )
+                                                                  setSlideDir(
+                                                                      'right'
+                                                                  )
+                                                              }
+                                                            : undefined
+                                                    }
+                                                />
                                             </div>
+                                        ) : (
+                                            <div className="w-4 h-full border-b border-dashed border-black"></div>
                                         )}
                                     </>
-                                )}
-                            </div>
-                            <div
-                                className="devider"
-                                onMouseEnter={() => setDividerHover(tab.id)}
-                                onMouseLeave={() => setDividerHover(null)}
-                            >
-                                {idx !== tabs.length - 1 ? (
-                                    <DividerAnimated
-                                        hovered={dividerHover === tab.id}
-                                        onClick={
-                                            dividerHover === tab.id
-                                                ? () => {
-                                                      const newId = Date.now()
-                                                      const insertIdx = idx + 1
-                                                      const newTab = {
-                                                          id: newId,
-                                                          name: `Page ${
-                                                              tabs.length + 1
-                                                          }`,
-                                                      }
-                                                      // Insert new tab at insertIdx
-                                                      const newTabs = [
-                                                          ...tabs.slice(
-                                                              0,
-                                                              insertIdx
-                                                          ),
-                                                          newTab,
-                                                          ...tabs.slice(
-                                                              insertIdx
-                                                          ),
-                                                      ]
-                                                      dispatch(
-                                                          reorderTabs(newTabs)
-                                                      )
-                                                      setPages((prev) => [
-                                                          ...prev.slice(
-                                                              0,
-                                                              insertIdx
-                                                          ),
-                                                          '',
-                                                          ...prev.slice(
-                                                              insertIdx
-                                                          ),
-                                                      ])
-                                                      setActiveTab(newId)
-                                                      setSlideDir('right')
-                                                      setActiveTabHovered(false)
-                                                  }
-                                                : undefined
-                                        }
-                                    />
-                                ) : (
-                                    <div className="w-4 h-full border-b border-dashed border-black"></div>
-                                )}
-                            </div>
+                                )
+                            })}
                         </div>
-                    ))}
-                </div>
+                    </SortableContext>
+                </DndContext>
                 <button
                     onClick={handleAddTab}
                     className="flex items-center px-4 whitespace-nowrap text-sm border border-dotted border-gray-300 cursor-pointer select-none rounded-md text-gray-800 h-7.5 mt-1"
