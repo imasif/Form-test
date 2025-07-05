@@ -446,7 +446,7 @@ export default function Home() {
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="w-4 h-full border-b border-dashed border-black"></div>
+                                            <div className="w-4 h-2 border-b border-dashed border-black"></div>
                                         )}
                                     </>
                                 )
