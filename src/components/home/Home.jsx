@@ -81,6 +81,8 @@ function SortableTab({ tab, idx, activeTab, onTabClick }) {
         transition,
         isDragging,
     } = useSortable({ id: tab.id })
+    // Fix: prevent tab from shrinking/growing by setting a fixed width
+    const tabWidth = 110 // px, adjust as needed for your design
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -88,6 +90,8 @@ function SortableTab({ tab, idx, activeTab, onTabClick }) {
         opacity: isDragging ? 0.7 : 1,
         boxShadow: isDragging ? '0 4px 16px rgba(0,0,0,0.18)' : undefined,
         cursor: isDragging ? 'grabbing' : 'grab',
+        minWidth: tabWidth,
+        maxWidth: tabWidth,
     }
     return (
         <div
@@ -98,13 +102,13 @@ function SortableTab({ tab, idx, activeTab, onTabClick }) {
             className="flex items-center group"
         >
             <div
-                className={`flex items-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md gap-1 tab-bar-item overflow-hidden ${
+                className={`flex items-center text-center px-4 py-1 whitespace-nowrap text-sm cursor-pointer select-none rounded-md gap-1 tab-bar-item overflow-hidden ${
                     tab.id === activeTab
                         ? 'active-tab border border-solid border-gray-400 '
                         : 'inactive-tab'
                 }`}
                 tabIndex={0}
-                style={{ minWidth: 0 }}
+                style={{ minWidth: 0, width: '100%' }}
                 onClick={() => onTabClick(tab.id, idx)}
             >
                 {/* Icon rendering for tab */}
@@ -125,7 +129,7 @@ function SortableTab({ tab, idx, activeTab, onTabClick }) {
                         )}
                     </span>
                 ) : null}
-                <span className="truncate max-w-[100px]">{tab.name}</span>
+                <span className="truncate w-full">{tab.name}</span>
             </div>
         </div>
     )
