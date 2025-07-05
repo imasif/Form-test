@@ -1,3 +1,4 @@
+import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { addTab, reorderTabs } from '../../slices/tabsSlice'
 import { useState, useRef, useEffect } from 'react'
@@ -230,14 +231,20 @@ export default function Home() {
                             className={`flex items-center tab-bar-view scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent sm:overflow-x-auto overflow-y-hidden h-9 sm:scrollbar-thin sm:scrollbar-thumb-gray-300 sm:scrollbar-track-transparent${
                                 isDragging ? ' no-vertical-scroll' : ''
                             }`}
-                            style={isDragging ? { overflowY: 'hidden' } : {}}
+                            style={
+                                isDragging
+                                    ? {
+                                          overflowY: 'hidden',
+                                          overflowX: 'hidden',
+                                      }
+                                    : {}
+                            }
                         >
                             {tabOrder.map((id, idx) => {
                                 const tab = tabs.find((t) => t.id === id)
                                 return (
-                                    <>
+                                    <React.Fragment key={tab.id}>
                                         <SortableTab
-                                            key={tab.id}
                                             tab={tab}
                                             idx={idx}
                                             activeTab={activeTab}
@@ -373,9 +380,9 @@ export default function Home() {
                                         {idx !== tabs.length - 1 ? (
                                             <div
                                                 className={`devider ${
-                                                    !isDragging
-                                                        ? ''
-                                                        : 'opacity-0'
+                                                    isDragging
+                                                        ? 'opacity-0'
+                                                        : ''
                                                 }`}
                                                 onMouseEnter={() =>
                                                     setDividerHover(tab.id)
@@ -383,6 +390,7 @@ export default function Home() {
                                                 onMouseLeave={() =>
                                                     setDividerHover(null)
                                                 }
+                                                key={`divider-${tab.id}`}
                                             >
                                                 <DividerAnimated
                                                     hovered={
@@ -446,9 +454,16 @@ export default function Home() {
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="w-4 h-2 border-b border-dashed border-black"></div>
+                                            <div
+                                                className={`w-4 h-1.5 border-b border-dashed border-black ${
+                                                    isDragging
+                                                        ? 'opacity-0'
+                                                        : ''
+                                                }`}
+                                                key={`divider-last-${tab.id}`}
+                                            ></div>
                                         )}
-                                    </>
+                                    </React.Fragment>
                                 )
                             })}
                         </div>
